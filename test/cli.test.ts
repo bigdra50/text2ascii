@@ -62,14 +62,14 @@ describe("text2ascii（偽の claude で通し実行）", () => {
     const result = await runCli(["--width", "5", "--retries", "1", "猫"], dir);
     expect(result.exitCode).toBe(3);
     expect(result.stdout).toBe("0123456789\n");
-    expect(result.stderr).toContain("幅が 10 列ある（上限 5）");
+    expect(result.stderr).toContain("text2ascii: the final art breaks the rules: 10 columns wide (limit 5)");
   });
 
   test("--json は絵と試行を JSON で出す。-v は試行ごとの使用量を標準エラーに出す", async () => {
     const dir = fakeClaude(answer("ok"));
     const result = await runCli(["--json", "-v", "猫"], dir);
     expect(JSON.parse(result.stdout)).toMatchObject({ art: "ok", violations: [], attempts: [{ art: "ok" }] });
-    expect(result.stderr).toContain("試行 1: claude-opus-5-5 / 1.2 秒 / $0.0110（定価換算）");
+    expect(result.stderr).toContain("text2ascii: attempt 1: claude-opus-5-5 / 1.2s / $0.0110 (list price)");
   });
 
   test("claude がエラーを返したら、その説明を出して終了コード 1", async () => {
@@ -83,6 +83,15 @@ describe("text2ascii（偽の claude で通し実行）", () => {
     const dir = fakeClaude(answer("ok"));
     const result = await runCli(["--effort", "huge", "猫"], dir);
     expect(result.exitCode).toBe(2);
-    expect(result.stderr).toContain("使い方:");
+    expect(result.stderr).toContain("text2ascii: --effort must be one of");
+    expect(result.stderr).toContain("Usage: text2ascii");
+  });
+
+  test("テーマが空なら、使い方を出して終了コード 2", async () => {
+    const dir = fakeClaude(answer("ok"));
+    const result = await runCli([], dir, "  \n");
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain("text2ascii: give a theme as an argument or on stdin");
+    expect(result.stderr).toContain("Usage: text2ascii");
   });
 });

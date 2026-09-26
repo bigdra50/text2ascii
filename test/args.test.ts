@@ -46,7 +46,9 @@ describe("parseArgs", () => {
   });
 
   test("effort は low、medium、high、xhigh、max のいずれか", () => {
-    expect(parseArgs(["-e", "huge"])._unsafeUnwrapErr().message).toContain("--effort");
+    expect(parseArgs(["-e", "huge"])._unsafeUnwrapErr().message).toBe(
+      "--effort must be one of low, medium, high, xhigh, max: huge",
+    );
   });
 
   test("width と height は 1 以上の整数", () => {
@@ -55,15 +57,20 @@ describe("parseArgs", () => {
       expect(parseArgs(["--height", value]).isErr()).toBe(true);
     }
     expect(parseArgs(["--width=-5"]).isErr()).toBe(true);
+    expect(parseArgs(["--width", "abc"])._unsafeUnwrapErr().message).toBe(
+      "--width must be an integer of at least 1: abc",
+    );
   });
 
   test("retries は 0 以上の整数", () => {
-    expect(parseArgs(["--retries=-1"]).isErr()).toBe(true);
+    expect(parseArgs(["--retries=-1"])._unsafeUnwrapErr().message).toBe(
+      "--retries must be an integer of at least 0: -1",
+    );
     expect(generateCommand(["--retries", "3"]).retries).toBe(3);
   });
 
   test("model は空にできない", () => {
-    expect(parseArgs(["--model", ""]).isErr()).toBe(true);
+    expect(parseArgs(["--model", ""])._unsafeUnwrapErr().message).toBe("--model needs a model ID");
   });
 
   test("知らないオプションは usage のエラー", () => {

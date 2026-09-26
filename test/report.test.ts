@@ -3,30 +3,30 @@ import { explainFailure, explainViolation, formatAttempt } from "../src/cli/repo
 import { asModelId } from "../src/contract/index.ts";
 
 describe("explainViolation", () => {
-  test("違反を利用者向けの日本語で表す", () => {
-    expect(explainViolation({ kind: "empty" })).toBe("絵が空だった");
-    expect(explainViolation({ kind: "tooWide", width: 72, limit: 60 })).toBe("幅が 72 列ある（上限 60）");
-    expect(explainViolation({ kind: "tooTall", height: 24, limit: 20 })).toBe("高さが 24 行ある（上限 20）");
+  test("違反を利用者向けの英文で表す", () => {
+    expect(explainViolation({ kind: "empty" })).toBe("the art is empty");
+    expect(explainViolation({ kind: "tooWide", width: 72, limit: 60 })).toBe("72 columns wide (limit 60)");
+    expect(explainViolation({ kind: "tooTall", height: 24, limit: 20 })).toBe("24 lines tall (limit 20)");
     expect(explainViolation({ kind: "invalidChars", chars: ["猫", "\t"] })).toBe(
-      'ASCII 以外の文字を含む（"猫"、"\\t"）',
+      'characters outside printable ASCII ("猫", "\\t")',
     );
   });
 });
 
 describe("explainFailure", () => {
-  test("バックエンドの失敗を利用者向けの日本語で表す", () => {
+  test("バックエンドの失敗を利用者向けの英文で表す", () => {
     expect(explainFailure({ kind: "processFailed", exitCode: 127, stderr: "command not found: claude" })).toBe(
-      "claude -p が終了コード 127 で止まった: command not found: claude",
+      "claude -p exited with code 127: command not found: claude",
     );
     expect(explainFailure({ kind: "processFailed", exitCode: 1, stderr: "" })).toBe(
-      "claude -p が終了コード 1 で止まった（標準エラーは空）",
+      "claude -p exited with code 1 (stderr was empty)",
     );
     expect(explainFailure({ kind: "reportedError", message: "API Error: 529 overloaded" })).toBe(
-      "claude -p がエラーを返した: API Error: 529 overloaded",
+      "claude -p reported an error: API Error: 529 overloaded",
     );
-    expect(explainFailure({ kind: "refused" })).toBe("モデルがこのテーマの生成を断った");
+    expect(explainFailure({ kind: "refused" })).toBe("the model declined to draw this theme");
     expect(explainFailure({ kind: "unreadableOutput", output: "x".repeat(300) })).toBe(
-      `claude -p の出力を読めなかった: ${"x".repeat(200)}…`,
+      `could not read the output of claude -p: ${"x".repeat(200)}…`,
     );
   });
 });
@@ -42,14 +42,25 @@ describe("formatAttempt", () => {
 
   test("試行の番号、モデル、秒数、定価換算の費用、thinking の量を並べる", () => {
     expect(formatAttempt({ art: "x", violations: [], usage }, 0)).toBe(
-      "試行 1: claude-opus-5-5 / 5.9 秒 / $0.0107（定価換算） / thinking 0 tokens",
+      "attempt 1: claude-opus-5-5 / 5.9s / $0.0107 (list price) / thinking 0 tokens",
     );
   });
 
   test("違反があれば件数を添える", () => {
     const attempt = { art: "x", violations: [{ kind: "empty" as const }], usage };
     expect(formatAttempt(attempt, 1)).toBe(
-      "試行 2: claude-opus-5-5 / 5.9 秒 / $0.0107（定価換算） / thinking 0 tokens / 違反 1 件",
+      "attempt 2: claude-opus-5-5 / 5.9s / $0.0107 (list price) / thinking 0 tokens / 1 violation",
+    );
+  });
+
+  test("token と violation は、数が 1 なら単数形、それ以外は複数形にする", () => {
+    const attempt = {
+      art: "x",
+      violations: [{ kind: "empty" as const }, { kind: "tooTall" as const, height: 24, limit: 20 }],
+      usage: { ...usage, thinkingTokens: 1 },
+    };
+    expect(formatAttempt(attempt, 0)).toBe(
+      "attempt 1: claude-opus-5-5 / 5.9s / $0.0107 (list price) / thinking 1 token / 2 violations",
     );
   });
 });

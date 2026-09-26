@@ -77,7 +77,7 @@ text2ascii -- "--help, shouted by a robot"           # put a theme that starts w
 | 0 | Printed art that meets the rules |
 | 1 | Calling Claude failed |
 | 2 | Invalid arguments |
-| 3 | The art still broke the rules after the redraws (the last attempt is printed anyway) |
+| 3 | The final art breaks the size or character rules (it is printed anyway) |
 
 ## Default model and effort
 

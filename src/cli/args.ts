@@ -31,27 +31,27 @@ export type CliCommand =
       readonly verbose: boolean;
     };
 
-export const USAGE = `使い方: text2ascii [オプション] <テーマ>
-       echo <テーマ> | text2ascii [オプション]
+export const USAGE = `Usage: text2ascii [options] <theme>
+       echo <theme> | text2ascii [options]
 
-テーマの文章から、Claude に描く内容を考えさせて ASCII アートを出力する。
+Turn a theme into ASCII art, with Claude deciding what to draw.
 
-オプション:
-  -m, --model <id>      使うモデル（既定: ${DEFAULT_MODEL}）
-  -e, --effort <level>  ${EFFORTS.join(", ")}（既定: ${DEFAULT_EFFORT}）
-      --width <n>       絵の幅の上限（列数、既定: ${DEFAULT_CANVAS.width}）
-      --height <n>      絵の高さの上限（行数、既定: ${DEFAULT_CANVAS.height}）
-      --retries <n>     大きさや文字の規則に違反したとき、描き直させる回数（既定: ${DEFAULT_RETRIES}）
-      --json            絵と試行ごとの使用量を JSON で出力する
-  -v, --verbose         試行ごとのモデル、秒数、定価換算の費用を標準エラーに出す
-  -h, --help            この説明を表示する
-      --version         版を表示する
+Options:
+  -m, --model <id>      model to use (default: ${DEFAULT_MODEL})
+  -e, --effort <level>  ${EFFORTS.join(", ")} (default: ${DEFAULT_EFFORT})
+      --width <n>       max width of the art, in columns (default: ${DEFAULT_CANVAS.width})
+      --height <n>      max height of the art, in lines (default: ${DEFAULT_CANVAS.height})
+      --retries <n>     redraws allowed when the art breaks the size or character rules (default: ${DEFAULT_RETRIES})
+      --json            print the art and per-attempt usage as JSON
+  -v, --verbose         print each attempt's model, time, and list-price cost to stderr
+  -h, --help            show this help
+      --version         show the version
 
-終了コード:
-  0  条件を満たす絵を出力した
-  1  Claude の呼び出しに失敗した
-  2  引数が正しくない
-  3  描き直しても条件を満たさなかった（最後の絵は出力する）`;
+Exit codes:
+  0  printed art that meets the rules
+  1  calling Claude failed
+  2  invalid arguments
+  3  the final art breaks the rules (it is printed anyway)`;
 
 const usage = (message: string): UsageFailure => ({ kind: "usage", message });
 
@@ -81,7 +81,7 @@ const integer = (
   if (value === undefined) return ok(fallback);
   return /^\d+$/.test(value) && Number(value) >= min
     ? ok(Number(value))
-    : err(usage(`--${name} には ${min} 以上の整数を指定してください: ${value}`));
+    : err(usage(`--${name} must be an integer of at least ${min}: ${value}`));
 };
 
 const isEffort = (value: string): value is Effort => (EFFORTS as readonly string[]).includes(value);
@@ -92,10 +92,10 @@ export function parseArgs(argv: readonly string[]): Result<CliCommand, UsageFail
     if (values.version) return ok({ kind: "version" });
     const effort = values.effort ?? DEFAULT_EFFORT;
     if (!isEffort(effort)) {
-      return err(usage(`--effort には ${EFFORTS.join(", ")} のいずれかを指定してください: ${effort}`));
+      return err(usage(`--effort must be one of ${EFFORTS.join(", ")}: ${effort}`));
     }
     const model = values.model ?? DEFAULT_MODEL;
-    if (model === "") return err(usage("--model にモデルの ID を指定してください"));
+    if (model === "") return err(usage("--model needs a model ID"));
     return Result.combine([
       integer("width", 1, values.width, DEFAULT_CANVAS.width),
       integer("height", 1, values.height, DEFAULT_CANVAS.height),

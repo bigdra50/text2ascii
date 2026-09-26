@@ -18,7 +18,7 @@ async function readTheme(fromArgs: string | null): Promise<string> {
 async function runGenerate(command: Extract<CliCommand, { kind: "generate" }>): Promise<number> {
   const theme = await readTheme(command.theme);
   if (theme === "") {
-    say("テーマを指定してください");
+    say("give a theme as an argument or on stdin");
     console.error(USAGE);
     return 2;
   }
@@ -35,7 +35,7 @@ async function runGenerate(command: Extract<CliCommand, { kind: "generate" }>): 
         for (const [i, attempt] of generation.attempts.entries()) say(formatAttempt(attempt, i));
       }
       if (generation.violations.length === 0) return 0;
-      say(`描き直しても条件を満たさなかった: ${generation.violations.map(explainViolation).join("、")}`);
+      say(`the final art breaks the rules: ${generation.violations.map(explainViolation).join("; ")}`);
       return 3;
     },
     (failure) => {
