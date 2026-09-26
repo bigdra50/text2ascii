@@ -2,6 +2,7 @@
   "name": "text2ascii",
   "version": "0.1.0",
   "description": "テーマの文章から、Claude に内容を考えさせて ASCII アートを描く CLI",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "bin": {
