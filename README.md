@@ -1,113 +1,112 @@
 # text2ascii
 
-テーマの文章から、Claude に描く内容を考えさせて ASCII アートを出力する CLI。
-文字や画像をそのまま変換するのではなく、テーマの雰囲気や比喩をモデルが解釈して絵にする。
+English | [日本語](README.ja.md)
+
+A CLI that turns a theme into ASCII art.
+Claude decides what to draw.
+Unlike tools that copy the shapes of text or images, the model reads the mood and metaphors of the theme and draws a picture from them.
 
 ```console
-$ text2ascii "月曜日の朝の憂鬱"
-      .-~~~-.            MONDAY            .-~~~-.
-    .(  rain )  .---------------------.   (  gray  ).
-   (___________)|  MON  07:00  ALARM  |  (__________)
-    ' ' ' ' ' ' '---------------------'   ' ' ' ' ' '
-     ' ' ' ' '     BRRRING! BRRRING!       ' ' ' '
-
-            ___________________________
-           /    zzz...     _____      /|
-          /   .-----.     /     \    / |
-         /   ( -  - )    |  ~~~  |  /  |
-        /     \ ~~ /      \_____/  /   |
-       /   ___/    \___   (coffee)/    /
-      /___/  blanket   \_________/    /
-      |__________________________|   /
-      |                          |  /
-      |__________________________|_/
-
-        "...mou getsuyoubi ka..."   *sigh*
+$ text2ascii "Monday morning blues"
+      _  _  _                          ___________
+     ( `( `( `)  rain...              |  MONDAY   |
+    (_.(_.(_._)                       |    07:00  |
+     / / / / /                        |  RING!!!  |
+    / / / / /                         |___________|
+                                         \  |  /
+       .-------.
+      /  -   -  \      "...five more minutes..."
+     |   o   o   |
+     |     ~     |        ___
+      \  .---.  /        |   |~~
+       '-------'         |cof|   (empty)
+      ___|___|___        |___|
+     /  zzz      \
+    /  _________  \      TO DO: 47 emails
+   |__|_________|__|            3 meetings
+   ~~~~~~~~~~~~~~~~~~~~~~~~     1 sad soul
+      ...week begins again...
 ```
 
-## 必要なもの
+## Requirements
 
-- Bun 1.3 以上
-- Claude Code の `claude` コマンド（`claude -p` を使える状態）
+- Bun 1.3 or later
+- Claude Code's `claude` command, set up so that `claude -p` works
 
-Claude は `claude -p` 経由で呼ぶため、API キーは要らない。
-費用は Claude Code のサブスクリプションの枠から出る。
+text2ascii calls Claude through `claude -p`, so it needs no API key of its own.
+Usage is billed to the account `claude` is signed in with.
+On a Claude subscription, it counts toward your plan's usage limits.
 
-## インストール
+## Install
 
 ```sh
+git clone https://github.com/bigdra50/text2ascii
+cd text2ascii
 bun install
-bun run build                      # dist/text2ascii を作る
-cp dist/text2ascii ~/.local/bin/   # PATH の通った場所に置く
+bun run build                      # builds dist/text2ascii
+cp dist/text2ascii ~/.local/bin/   # put it somewhere on your PATH
 ```
 
-ビルドせずに `bun src/cli/main.ts <テーマ>` でも動く。
+You can also run it without building: `bun src/cli/main.ts <theme>`.
 
-## 使い方
+## Usage
 
 ```sh
-text2ascii "締切前夜"
-echo "コーヒーを飲みながらコードを書くエンジニア" | text2ascii
+text2ascii "the night before a deadline"
+echo "an engineer writing code with a cup of coffee" | text2ascii
 text2ascii -e high --width 80 --height 24 "a rocket launching into space"
-text2ascii -v "三日月の下で眠る猫"      # 試行ごとの秒数と定価換算の費用を標準エラーに出す
-text2ascii -- "--help と叫ぶロボット"   # ハイフンで始まるテーマは -- の後ろに置く
+text2ascii -v "a cat sleeping under a crescent moon"  # print seconds and list-price cost per attempt to stderr
+text2ascii "月曜日の朝の憂鬱"                         # themes can be in any language
+text2ascii -- "--help, shouted by a robot"           # put a theme that starts with a hyphen after --
 ```
 
-| オプション | 既定 | 内容 |
+| Option | Default | Description |
 | --- | --- | --- |
-| `-m, --model <id>` | `claude-opus-5-5` | 使うモデル |
-| `-e, --effort <level>` | `low` | `low` `medium` `high` `xhigh` `max` |
-| `--width <n>` | `60` | 絵の幅の上限（列数） |
-| `--height <n>` | `20` | 絵の高さの上限（行数） |
-| `--retries <n>` | `1` | 規則に違反したとき、描き直させる回数 |
-| `--json` | なし | 絵と試行ごとの使用量を JSON で出力する |
-| `-v, --verbose` | なし | 試行ごとのモデル、秒数、費用を標準エラーに出す |
+| `-m, --model <id>` | `claude-opus-5-5` | Model to use |
+| `-e, --effort <level>` | `low` | `low`, `medium`, `high`, `xhigh`, or `max` |
+| `--width <n>` | `60` | Maximum width of the art, in columns |
+| `--height <n>` | `20` | Maximum height of the art, in lines |
+| `--retries <n>` | `1` | How many redraws to ask for when the art breaks the size or character rules |
+| `--json` | off | Print the art and per-attempt usage as JSON |
+| `-v, --verbose` | off | Print the model, seconds, and list-price cost of each attempt to stderr |
+| `-h, --help` | | Show usage |
+| `--version` | | Show the version |
 
-| 終了コード | 意味 |
+| Exit code | Meaning |
 | --- | --- |
-| 0 | 条件を満たす絵を出力した |
-| 1 | Claude の呼び出しに失敗した |
-| 2 | 引数が正しくない |
-| 3 | 描き直しても条件を満たさなかった（最後の絵は出力する） |
+| 0 | Printed art that meets the rules |
+| 1 | Calling Claude failed |
+| 2 | Invalid arguments |
+| 3 | The art still broke the rules after the redraws (the last attempt is printed anyway) |
 
-## 既定のモデルと effort
+## Default model and effort
 
-既定は Claude Opus 5.5 の effort low にしている。
-2026-09-27 に、Haiku 4.5、Sonnet 5、Opus 5、Opus 5.5 を effort（Haiku は thinking の予算）ごとに 5 テーマで比べ、モデル名を伏せた画像を 2 つのモデルが採点した。
+The default is Claude Opus 5.5 at effort `low`.
+On 2026-09-27, Haiku 4.5, Sonnet 5, Opus 5, and Opus 5.5 were compared on five themes.
+Each model drew at every effort level; for Haiku 4.5, thinking budgets took the place of effort levels.
+Two judge models, Opus 5.5 and Sonnet 5, scored images of the art with the model names hidden.
 
-| モデルと条件 | 平均点（5 点満点） | 1 枚の時間 | 1 枚の費用（定価換算） |
+| Model and setting | Mean score (out of 5) | Time per art | Cost per art (list price) |
 | --- | --- | --- | --- |
-| Opus 5.5 low | 4.0 | 6 秒 | $0.011 |
-| Opus 5.5 xhigh | 4.05 | 94 秒 | $0.19 |
-| Sonnet 5 low | 3.65 | 5 秒 | $0.006 |
-| Sonnet 5 high | 4.05 | 29 秒 | $0.025 |
-| Opus 5 xhigh | 4.0 | 42 秒 | $0.083 |
-| Haiku 4.5（全条件） | 2.1〜2.7 | 2〜43 秒 | $0.001〜0.024 |
+| Opus 5.5 low | 4.0 | 6 s | $0.011 |
+| Opus 5.5 xhigh | 4.05 | 94 s | $0.19 |
+| Sonnet 5 low | 3.65 | 5 s | $0.006 |
+| Sonnet 5 high | 4.05 | 29 s | $0.025 |
+| Opus 5 xhigh | 4.0 | 42 s | $0.083 |
+| Haiku 4.5 (all settings) | 2.1-2.7 | 2-43 s | $0.001-0.024 |
 
-Opus 5.5 は effort を上げても点が伸びず、時間と費用だけが増えた。
-費用を最も抑えたいときは `-m claude-sonnet-5` が候補になる。
-ただし Sonnet 5 low の点は、採点者によって 3.1 と 4.2 に割れた。
+Raising the effort of Opus 5.5 did not raise its score; it only added time and cost.
+If cost matters most, try `-m claude-sonnet-5`.
+The two judges disagreed on Sonnet 5 low, though, giving it 3.1 and 4.2.
 
-## 仕組み
+## How it works
 
-- `claude -p` は、ツール、設定ファイル、MCP を読み込まない形で呼ぶ。利用者ごとの CLAUDE.md がプロンプトに入ると、比較で測った出来から外れるため
-- テーマは引数ではなく標準入力で `claude` に渡す。ハイフンで始まるテーマが `claude` のオプションとして読まれないようにするため
-- 返答のコードブロックから絵を取り出し、幅、高さ、文字の種類（印字できる ASCII だけか）を検査する
-- 違反があれば、違反の内容と前回の絵を添えて描き直させる
-- `CLAUDE_CODE_EFFORT_LEVEL` と `CLAUDE_EFFORT` を外して `claude` を起動する。Claude Code のセッション内から実行すると、親の effort がこの環境変数で引き継がれ、`--effort` より優先されるため
+- `claude -p` runs without tools, settings files, or MCP servers. A user's own CLAUDE.md in the prompt would pull the results away from what the comparison measured
+- The theme reaches `claude` on stdin, not as an argument, so a theme that starts with a hyphen is never parsed as a `claude` option
+- The art is taken from the code block in the reply and checked for width, height, and characters (printable ASCII only)
+- If a check fails, the model is asked to redraw, with the violations and its previous art attached
+- `claude` starts with `CLAUDE_CODE_EFFORT_LEVEL` and `CLAUDE_EFFORT` removed from its environment. Inside a Claude Code session, these variables carry the parent's effort, which would override `--effort`
 
-## 開発
+## License
 
-```sh
-bun run check   # 型検査、lint（Biome）、テスト
-```
-
-| ディレクトリ | 役割 |
-| --- | --- |
-| `src/contract/` | モジュール間で受け渡す型と既定値。実装はこの型を満たす限り作り直してよい |
-| `src/core/` | 絵の取り出しと検査、プロンプト、描き直しの流れ。副作用を持たない |
-| `src/backends/` | `claude -p` の呼び出し。API 版を足すときは、同じ `Backend` の型で実装する |
-| `src/cli/` | 引数の解釈、出力、終了コード |
-
-エラーは throw せず、neverthrow の `Result` で返す。
-`test/cli.test.ts` は、PATH の先頭に偽の `claude` を置き、モデルを呼ばずに CLI 全体を動かす。
+[MIT](LICENSE)
