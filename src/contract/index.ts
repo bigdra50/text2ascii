@@ -1,15 +1,15 @@
-// CLI、生成処理、バックエンドの間で受け渡す型。実装はこの型を満たす限り作り直してよい
+// Types passed between the CLI, the generation logic, and the backends. Any implementation may be rewritten as long as it satisfies these types
 import type { ResultAsync } from "neverthrow";
 
 export const EFFORTS = ["low", "medium", "high", "xhigh", "max"] as const;
 export type Effort = (typeof EFFORTS)[number];
 
 declare const modelIdBrand: unique symbol;
-/** Claude のモデル ID（claude-opus-5-5 など）。claude -p は opus などの別名も受け付ける */
+/** A Claude model ID such as claude-opus-5-5. claude -p also accepts aliases such as opus */
 export type ModelId = string & { readonly [modelIdBrand]: true };
 export const asModelId = (value: string): ModelId => value as ModelId;
 
-/** 絵の大きさの上限。width は列数（文字数）、height は行数 */
+/** Size limits for the art. width is in columns (characters) and height in lines */
 export interface Canvas {
   readonly width: number;
   readonly height: number;
@@ -27,10 +27,10 @@ export interface CompletionRequest {
 }
 
 export interface Usage {
-  /** 実際に応答したモデル。別名で指定しても解決後の ID が入る */
+  /** The model that actually answered. Holds the resolved ID even when an alias was requested */
   readonly model: ModelId;
   readonly durationMs: number;
-  /** API 定価換算の額。サブスクリプション経由の呼び出しでも、請求額ではなくこの換算値になる */
+  /** Cost at API list prices. Calls through a subscription report this figure too, not the amount actually billed */
   readonly costUsd: number;
   readonly outputTokens: number;
   readonly thinkingTokens: number;
@@ -47,7 +47,7 @@ export type BackendFailure =
   | { readonly kind: "reportedError"; readonly message: string }
   | { readonly kind: "refused" };
 
-/** Claude を呼ぶ手段。claude -p でも API でも、この形で返す */
+/** A way to call Claude. Both claude -p and the API return results in this shape */
 export interface Backend {
   readonly complete: (request: CompletionRequest) => ResultAsync<Completion, BackendFailure>;
 }
@@ -66,16 +66,16 @@ export interface Attempt {
 
 export interface GenerationResult {
   readonly art: string;
-  /** 最後の試行の違反。空なら条件を満たしている */
+  /** Violations in the last attempt. Empty means the art meets the rules */
   readonly violations: readonly Violation[];
-  /** 先頭が最初の試行 */
+  /** The first element is the first attempt */
   readonly attempts: readonly [Attempt, ...Attempt[]];
 }
 
-// 既定値の根拠は 2026-09-27 の比較（4 モデル x effort x 5 テーマ、2 人の採点者の平均）。
-// Opus 5.5 の low は 1 枚 6 秒・$0.011 で平均 4.0 点。effort を上げても点は伸びず、時間と費用だけが増えた
+// The defaults come from the 2026-09-27 comparison (4 models x effort levels x 5 themes, averaged over two judges).
+// Opus 5.5 at low scored 4.0 on average at 6 s and $0.011 per piece. Higher effort did not raise the score, only the time and cost
 export const DEFAULT_MODEL = asModelId("claude-opus-5-5");
 export const DEFAULT_EFFORT: Effort = "low";
 export const DEFAULT_CANVAS: Canvas = { width: 60, height: 20 };
-// 描き直しは 1 回ごとに 1 枚分の時間と費用がかかるため、既定は 1 回にとどめる
+// Each redraw costs the time and money of one more piece, so the default allows only one
 export const DEFAULT_RETRIES = 1;

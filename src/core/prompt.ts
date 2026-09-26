@@ -1,7 +1,7 @@
 import type { Canvas, Violation } from "../contract/index.ts";
 import { describeViolation } from "./art.ts";
 
-// 2026-09-27 のモデル比較で使った文面。比較結果（既定のモデルと effort）はこの文面が前提なので、変えたら測り直す
+// The wording used in the 2026-09-27 model comparison. The defaults (model and effort) rest on it, so re-run the comparison after changing it
 export function systemPrompt(canvas: Canvas): string {
   return [
     "You are an ASCII artist inside a command-line tool.",
@@ -15,7 +15,7 @@ export function systemPrompt(canvas: Canvas): string {
   ].join("\n");
 }
 
-/** 描き直しの依頼文。claude -p は前の会話を持たないため、テーマと前回の絵も毎回添える */
+/** The redraw request. claude -p keeps no conversation, so the theme and the previous art are sent again every time */
 export function retryPrompt(theme: string, previousArt: string, violations: readonly Violation[]): string {
   return [
     `Theme: ${theme}`,

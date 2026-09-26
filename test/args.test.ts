@@ -4,12 +4,12 @@ import { asModelId, DEFAULT_CANVAS, DEFAULT_EFFORT, DEFAULT_MODEL, DEFAULT_RETRI
 
 const generateCommand = (argv: readonly string[]) => {
   const command = parseArgs(argv)._unsafeUnwrap();
-  if (command.kind !== "generate") throw new Error(`generate を期待したが ${command.kind} だった`);
+  if (command.kind !== "generate") throw new Error(`expected generate, got ${command.kind}`);
   return command;
 };
 
 describe("parseArgs", () => {
-  test("指定が無ければ既定値で生成する", () => {
+  test("uses the defaults when nothing is given", () => {
     expect(parseArgs(["猫"])._unsafeUnwrap()).toEqual({
       kind: "generate",
       theme: "猫",
@@ -21,15 +21,15 @@ describe("parseArgs", () => {
     });
   });
 
-  test("複数の位置引数は空白でつないで 1 つのテーマにする", () => {
+  test("joins several positional arguments with spaces into one theme", () => {
     expect(generateCommand(["a", "cat", "sleeping"]).theme).toBe("a cat sleeping");
   });
 
-  test("テーマが無ければ theme は null（標準入力から読む）", () => {
+  test("sets theme to null when none is given (it is read from stdin)", () => {
     expect(generateCommand([]).theme).toBeNull();
   });
 
-  test("各オプションを読む", () => {
+  test("reads each option", () => {
     const command = generateCommand(["-m", "claude-sonnet-5", "-e", "high", "--width", "80", "--height", "24"]);
     expect(command.settings).toEqual({ model: asModelId("claude-sonnet-5"), effort: "high" });
     expect(command.canvas).toEqual({ width: 80, height: 24 });
@@ -39,19 +39,19 @@ describe("parseArgs", () => {
     expect(flags.verbose).toBe(true);
   });
 
-  test("-h は help、--version は version。ほかの指定より優先する", () => {
+  test("-h means help and --version means version, ahead of anything else", () => {
     expect(parseArgs(["-h"])._unsafeUnwrap()).toEqual({ kind: "help" });
     expect(parseArgs(["猫", "--help", "--version"])._unsafeUnwrap()).toEqual({ kind: "help" });
     expect(parseArgs(["--version", "猫"])._unsafeUnwrap()).toEqual({ kind: "version" });
   });
 
-  test("effort は low、medium、high、xhigh、max のいずれか", () => {
+  test("accepts only low, medium, high, xhigh, or max for effort", () => {
     expect(parseArgs(["-e", "huge"])._unsafeUnwrapErr().message).toBe(
       "--effort must be one of low, medium, high, xhigh, max: huge",
     );
   });
 
-  test("width と height は 1 以上の整数", () => {
+  test("requires width and height to be integers of at least 1", () => {
     for (const value of ["0", "abc", "2.5"]) {
       expect(parseArgs(["--width", value]).isErr()).toBe(true);
       expect(parseArgs(["--height", value]).isErr()).toBe(true);
@@ -62,22 +62,22 @@ describe("parseArgs", () => {
     );
   });
 
-  test("retries は 0 以上の整数", () => {
+  test("requires retries to be an integer of at least 0", () => {
     expect(parseArgs(["--retries=-1"])._unsafeUnwrapErr().message).toBe(
       "--retries must be an integer of at least 0: -1",
     );
     expect(generateCommand(["--retries", "3"]).retries).toBe(3);
   });
 
-  test("model は空にできない", () => {
+  test("rejects an empty model", () => {
     expect(parseArgs(["--model", ""])._unsafeUnwrapErr().message).toBe("--model needs a model ID");
   });
 
-  test("知らないオプションは usage のエラー", () => {
+  test("reports an unknown option as a usage error", () => {
     expect(parseArgs(["--bogus"])._unsafeUnwrapErr().kind).toBe("usage");
   });
 
-  test("-- より後ろは、ハイフンで始まってもテーマとして扱う", () => {
+  test("treats everything after -- as the theme, even when it starts with a hyphen", () => {
     expect(generateCommand(["--", "-v", "is", "a", "theme"]).theme).toBe("-v is a theme");
   });
 });

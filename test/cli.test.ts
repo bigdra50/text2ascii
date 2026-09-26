@@ -3,8 +3,8 @@ import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-// モデルを呼ばずに CLI 全体を動かすため、PATH の先頭に偽の claude を置く。
-// 偽の claude は標準入力を記録し、用意した JSON をそのまま返す
+// A fake claude at the front of PATH lets the whole CLI run without calling a model.
+// It records its stdin and prints the prepared JSON as is
 const ROOT = join(import.meta.dir, "..");
 
 function fakeClaude(reply: object): string {
@@ -41,8 +41,8 @@ async function runCli(args: readonly string[], dir: string, stdin = "") {
   return { stdout, stderr, exitCode };
 }
 
-describe("text2ascii（偽の claude で通し実行）", () => {
-  test("条件を満たす絵なら、絵を出して終了コード 0", async () => {
+describe("text2ascii end to end with a fake claude", () => {
+  test("prints art that meets the rules and exits with 0", async () => {
     const dir = fakeClaude(answer(" /\\_/\\\n( o.o )"));
     const result = await runCli(["猫"], dir);
     expect(result.exitCode).toBe(0);
@@ -50,14 +50,14 @@ describe("text2ascii（偽の claude で通し実行）", () => {
     expect(readFileSync(join(dir, "stdin.txt"), "utf8")).toBe("猫");
   });
 
-  test("テーマは標準入力からも読める", async () => {
+  test("reads the theme from stdin too", async () => {
     const dir = fakeClaude(answer("ok"));
     const result = await runCli([], dir, "締切前夜\n");
     expect(result.exitCode).toBe(0);
     expect(readFileSync(join(dir, "stdin.txt"), "utf8")).toBe("締切前夜");
   });
 
-  test("描き直しても条件を満たさなければ、最後の絵を出して終了コード 3", async () => {
+  test("prints the last art and exits with 3 when redraws do not fix it", async () => {
     const dir = fakeClaude(answer("0123456789"));
     const result = await runCli(["--width", "5", "--retries", "1", "猫"], dir);
     expect(result.exitCode).toBe(3);
@@ -65,21 +65,21 @@ describe("text2ascii（偽の claude で通し実行）", () => {
     expect(result.stderr).toContain("text2ascii: the final art breaks the rules: 10 columns wide (limit 5)");
   });
 
-  test("--json は絵と試行を JSON で出す。-v は試行ごとの使用量を標準エラーに出す", async () => {
+  test("--json prints the art and attempts as JSON, and -v logs per-attempt usage to stderr", async () => {
     const dir = fakeClaude(answer("ok"));
     const result = await runCli(["--json", "-v", "猫"], dir);
     expect(JSON.parse(result.stdout)).toMatchObject({ art: "ok", violations: [], attempts: [{ art: "ok" }] });
     expect(result.stderr).toContain("text2ascii: attempt 1: claude-opus-5-5 / 1.2s / $0.0110 (list price)");
   });
 
-  test("claude がエラーを返したら、その説明を出して終了コード 1", async () => {
+  test("prints the error from claude and exits with 1", async () => {
     const dir = fakeClaude({ type: "result", is_error: true, result: "API Error: 529 overloaded" });
     const result = await runCli(["猫"], dir);
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("API Error: 529 overloaded");
   });
 
-  test("引数が正しくなければ、使い方を出して終了コード 2", async () => {
+  test("prints usage and exits with 2 on invalid arguments", async () => {
     const dir = fakeClaude(answer("ok"));
     const result = await runCli(["--effort", "huge", "猫"], dir);
     expect(result.exitCode).toBe(2);
@@ -87,7 +87,7 @@ describe("text2ascii（偽の claude で通し実行）", () => {
     expect(result.stderr).toContain("Usage: text2ascii");
   });
 
-  test("テーマが空なら、使い方を出して終了コード 2", async () => {
+  test("prints usage and exits with 2 when the theme is empty", async () => {
     const dir = fakeClaude(answer("ok"));
     const result = await runCli([], dir, "  \n");
     expect(result.exitCode).toBe(2);

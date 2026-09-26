@@ -1,6 +1,6 @@
 import type { Attempt, BackendFailure, Violation } from "../contract/index.ts";
 
-// 読めなかった出力は端末を埋めないよう先頭だけ見せる
+// Show only the start of unreadable output so it does not flood the terminal
 const OUTPUT_PREVIEW = 200;
 
 const count = (n: number, noun: string): string => `${n} ${noun}${n === 1 ? "" : "s"}`;

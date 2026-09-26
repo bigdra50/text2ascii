@@ -6,7 +6,7 @@ import { retryPrompt, systemPrompt } from "./prompt.ts";
 export interface GenerateOptions {
   readonly canvas: Canvas;
   readonly settings: ModelSettings;
-  /** 違反したときに描き直させる回数の上限。0 なら描き直さない */
+  /** Maximum number of redraws after a violation. 0 disables redrawing */
   readonly retries: number;
   readonly backend: Backend;
 }

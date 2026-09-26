@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// text2ascii の CLI。テーマを受け取り、Claude に ASCII アートを描かせて標準出力へ出す
+// The text2ascii CLI. Takes a theme, has Claude draw ASCII art, and prints it to stdout
 import pkg from "../../package.json" with { type: "json" };
 import { createClaudeCliBackend } from "../backends/claude-cli.ts";
 import { generate } from "../core/generate.ts";
@@ -10,7 +10,7 @@ const say = (message: string) => console.error(`text2ascii: ${message}`);
 
 async function readTheme(fromArgs: string | null): Promise<string> {
   if (fromArgs !== null) return fromArgs.trim();
-  // 端末から直接起動されたときに標準入力を待つと、止まったように見えるため読まない
+  // When started directly from a terminal, waiting on stdin would look like a hang, so stdin is not read
   if (process.stdin.isTTY) return "";
   return (await Bun.stdin.text()).trim();
 }

@@ -1,9 +1,9 @@
 import type { Canvas, Violation } from "../contract/index.ts";
 
-// 閉じの ``` が無い返答（出力の打ち切り）でも、末尾までを絵として拾う
+// Also takes everything up to the end as art when the closing ``` is missing (a truncated reply)
 const FENCE = /```[^\n]*\n([\s\S]*?)(?:```|$)/;
 
-/** 返答から絵の部分を取り出す。コードブロックが無ければ返答全体を絵として扱う */
+/** Extracts the art from a reply. Without a code block, the whole reply is treated as the art */
 export function extractArt(text: string): string {
   const normalized = text.replaceAll("\r\n", "\n");
   const body = FENCE.exec(normalized)?.[1] ?? normalized;
@@ -18,7 +18,7 @@ const isPrintableAscii = (char: string) => char >= " " && char <= "~";
 export function validateArt(art: string, canvas: Canvas): readonly Violation[] {
   if (art.trim() === "") return [{ kind: "empty" }];
   const lines = art.split("\n");
-  // 幅はコードポイント数で数える。全角文字の表示幅（2 列）は、invalidChars として別に弾くので考えない
+  // Width counts code points. The two-column display width of full-width characters is ignored because invalidChars rejects them anyway
   const width = Math.max(...lines.map((line) => [...line].length));
   const invalid = [...new Set([...lines.join("")].filter((char) => !isPrintableAscii(char)))];
   const found: readonly (Violation | null)[] = [
@@ -29,7 +29,7 @@ export function validateArt(art: string, canvas: Canvas): readonly Violation[] {
   return found.filter((violation) => violation !== null);
 }
 
-/** 違反をモデル向けの英文で表す。描き直しの指示に使う */
+/** Describes a violation in English for the model, for use in redraw requests */
 export function describeViolation(violation: Violation): string {
   switch (violation.kind) {
     case "empty":

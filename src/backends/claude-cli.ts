@@ -20,7 +20,7 @@ export interface RunOptions {
   readonly stdin: string;
 }
 
-/** 外部コマンドを実行する。起動に失敗しても reject せず、終了コードと標準エラーで返す */
+/** Runs an external command. Even when it fails to start, it resolves with an exit code and stderr instead of rejecting */
 export type Runner = (command: readonly string[], options: RunOptions) => Promise<RunResult>;
 
 export function claudeArgs(request: CompletionRequest): readonly string[] {
@@ -30,8 +30,8 @@ export function claudeArgs(request: CompletionRequest): readonly string[] {
     request.settings.model,
     "--effort",
     request.settings.effort,
-    // ツール、設定ファイル（CLAUDE.md を含む）、MCP を読み込むと、利用者ごとの設定が絵に混ざる。
-    // system prompt も差し替え、既定値を決めた比較と同じ条件で呼ぶ
+    // Loading tools, settings files (including CLAUDE.md), or MCP servers would mix each user's setup into the art.
+    // The system prompt is replaced too, so the call matches the comparison that chose the defaults
     "--tools",
     "",
     "--setting-sources",
@@ -45,8 +45,8 @@ export function claudeArgs(request: CompletionRequest): readonly string[] {
   ];
 }
 
-// Claude Code のセッションから起動すると、親の effort 設定がこの 2 つの環境変数で引き継がれ、--effort より優先される。
-// max が入っていると、low を指定しても 1 枚に数分かかる（2026-09-27 に実際のリクエストを捕捉して確認）
+// When started from a Claude Code session, the parent's effort setting is inherited through these two variables and takes precedence over --effort.
+// With max set there, one piece takes minutes even when low is requested (confirmed on 2026-09-27 by capturing the actual request)
 const EFFORT_OVERRIDES: readonly string[] = ["CLAUDE_CODE_EFFORT_LEVEL", "CLAUDE_EFFORT"];
 
 export const claudeEnv = (env: Env): Env =>
@@ -58,7 +58,7 @@ const record = (value: unknown): Readonly<Record<string, unknown>> => (isRecord(
 const num = (value: unknown): number => (typeof value === "number" ? value : 0);
 const parseJson = Result.fromThrowable((text: string): unknown => JSON.parse(text));
 
-/** claude -p --output-format json の出力を読む */
+/** Reads the output of claude -p --output-format json */
 export function parseClaudeOutput(stdout: string): Result<Completion, BackendFailure> {
   const unreadable: BackendFailure = { kind: "unreadableOutput", output: stdout };
   return parseJson(stdout)
@@ -97,7 +97,7 @@ const runProcess: Runner = async (command, { env, stdin }) => {
     ]);
     return { stdout, stderr, exitCode };
   } catch (error) {
-    // claude が見つからないなど、起動そのものの失敗。127 はシェルの「コマンドが見つからない」に合わせた
+    // The command could not start at all, for example because claude is not on PATH. 127 matches the shell's "command not found"
     return { stdout: "", stderr: error instanceof Error ? error.message : String(error), exitCode: 127 };
   }
 };
@@ -113,11 +113,11 @@ export function createClaudeCliBackend(options: ClaudeCliOptions = {}): Backend 
   const env = claudeEnv(options.env ?? process.env);
   const command = options.command ?? "claude";
   return {
-    // テーマを引数に置くと、"-" で始まるテーマが claude のオプションとして読まれる。標準入力なら本文として届く
+    // As an argument, a theme starting with "-" would be read as a claude option. On stdin it arrives as plain text
     complete: (request) =>
       ResultAsync.fromSafePromise(run([command, ...claudeArgs(request)], { env, stdin: request.prompt })).andThen(
         (result): Result<Completion, BackendFailure> =>
-          // is_error の JSON を出して終了コード 1 で終わることがあるため、終了コードより出力の有無で判断する
+          // claude can print an is_error JSON and still exit with code 1, so the presence of output decides, not the exit code
           result.stdout.trim() === ""
             ? err({ kind: "processFailed", exitCode: result.exitCode, stderr: result.stderr.trim() })
             : parseClaudeOutput(result.stdout),

@@ -22,7 +22,7 @@ export type CliCommand =
   | { readonly kind: "version" }
   | {
       readonly kind: "generate";
-      /** null なら標準入力から読む */
+      /** null means the theme is read from stdin */
       readonly theme: string | null;
       readonly settings: ModelSettings;
       readonly canvas: Canvas;
