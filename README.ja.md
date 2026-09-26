@@ -46,8 +46,10 @@ cd text2ascii
 bun install
 bun run build                      # dist/text2ascii を作る
 cp dist/text2ascii ~/.local/bin/   # PATH の通った場所に置く
+ln -s text2ascii ~/.local/bin/t2a  # 任意。短い名前 t2a を足す
 ```
 
+`t2a` で呼んでも、`text2ascii` と同じように動く。
 ビルドしなくても、`bun src/cli/main.ts <テーマ>` で動かせる。
 
 ## 使い方

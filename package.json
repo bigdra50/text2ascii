@@ -6,7 +6,8 @@
   "private": true,
   "type": "module",
   "bin": {
-    "text2ascii": "src/cli/main.ts"
+    "text2ascii": "src/cli/main.ts",
+    "t2a": "src/cli/main.ts"
   },
   "engines": {
     "bun": ">=1.3.0"
