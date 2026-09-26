@@ -1,0 +1,3 @@
+# node_modules が無いときに依存を自動で取りに行くと、CLI の標準出力に余計な出力が混ざる
+[install]
+auto = "disable"
